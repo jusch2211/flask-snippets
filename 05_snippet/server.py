@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
+import os, json
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
@@ -14,6 +15,43 @@ queries = []
 
 # Nutzer-Votes speichern
 user_votes = {}  # Format: {username: {query_index: vote_option}}
+
+# Datei-Pfad für Pseudo-Datenbank:
+file_path = './db.json'  # Aktuelles Verzeichnis
+
+# Pseudo-Datenbank:
+def update_json_file(file_path, updates):
+    """
+    Aktualisiert ein JSON-Objekt in einer Datei mit den angegebenen Änderungen.
+
+    :param file_path: Pfad zur JSON-Datei.
+    :param updates: Ein Dictionary mit den neuen Werten.
+    :raises FileNotFoundError: Wenn die Datei nicht existiert.
+    :raises ValueError: Wenn die Datei kein gültiges JSON enthält.
+    """
+    if not os.path.exists(file_path):
+        print(f"Die Datei {file_path} existiert nicht. Sie wird erstellt.")
+        with open(file_path, 'w', encoding='utf-8') as file:
+            json.dump({}, file, indent=4, ensure_ascii=False)  # Leeres JSON-Dokument schreiben
+
+    try:
+        # Datei lesen
+        with open(file_path, 'r', encoding='utf-8') as file:
+            data = json.load(file)
+    except json.JSONDecodeError:
+        raise ValueError(f"Die Datei {file_path} enthält kein gültiges JSON.")
+
+    # JSON-Objekt aktualisieren
+    if not isinstance(data, dict):
+        raise ValueError("Das JSON-Objekt muss ein Dictionary sein.")
+
+    data.update(updates)
+
+    # Änderungen speichern
+    with open(file_path, 'w', encoding='utf-8') as file:
+        json.dump(data, file, indent=4, ensure_ascii=False)
+
+    print(f"Die Datei {file_path} wurde erfolgreich aktualisiert.")
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
@@ -58,6 +96,8 @@ def create_query():
             "votes": {"agree": 0, "disagree": 0, "abstain": 0}
         })
         flash('Abfrage erfolgreich erstellt!')
+        #update_json_file(file_path, dict(queries)) # Speichert die neuen Queries
+        type(queries)
         return redirect(url_for('read_queries'))
 
     return render_template('queries/create.html')
